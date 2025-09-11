@@ -1,7 +1,7 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import crypto from 'crypto';
+import crypto from "crypto";
 
-// This configuration assumes your .env file has the AWS credentials
+// S3 Client Setup
 const s3Client = new S3Client({
   region: process.env.AWS_BUCKET_REGION,
   credentials: {
@@ -12,23 +12,28 @@ const s3Client = new S3Client({
 
 /**
  * Uploads a file buffer to AWS S3.
- * @param {Buffer} fileBuffer The file data as a buffer.
- * @param {string} mimeType The MIME type of the file.
- * @returns {Promise<string>} The public URL of the uploaded file.
+ * @param {Buffer} fileBuffer - The file data as a buffer.
+ * @param {string} mimeType - The MIME type of the file (e.g. "image/png").
+ * @returns {Promise<string>} - The public URL of the uploaded file.
  */
 export const uploadFileToS3 = async (fileBuffer, mimeType) => {
-  // Generate a unique file name to prevent overwrites
-  const uniqueFileName = crypto.randomBytes(16).toString('hex');
-  
+  // Generate unique filename
+  const randomHex = crypto.randomBytes(16).toString("hex");
+
+  // Extract extension from MIME type
+  const extension = mimeType.split("/")[1]; // e.g. "png"
+  const uniqueFileName = `${randomHex}.${extension}`;
+
   const command = new PutObjectCommand({
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: uniqueFileName,
     Body: fileBuffer,
     ContentType: mimeType,
+    ACL: "public-read", // 👈 ensures the object is publicly accessible
   });
 
   await s3Client.send(command);
-  
+
   // Return the full public URL of the file
   return `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_BUCKET_REGION}.amazonaws.com/${uniqueFileName}`;
 };
