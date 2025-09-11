@@ -29,7 +29,6 @@ export const uploadFileToS3 = async (fileBuffer, mimeType) => {
     Key: uniqueFileName,
     Body: fileBuffer,
     ContentType: mimeType,
-    ACL: "public-read", // 👈 ensures the object is publicly accessible
   });
 
   await s3Client.send(command);
