@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { protect, isAdmin } from '../middleware/auth.middleware.js';
+import { protect, isAdmin } from '../middleware/authMiddleware.js';
 import { 
   createSubmission, 
   reviewSubmission, 
