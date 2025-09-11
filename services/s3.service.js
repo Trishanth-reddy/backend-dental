@@ -1,7 +1,8 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import crypto from "crypto";
+import path from "path";
 
-// S3 Client Setup
+// S3 Client Setup remains the same
 const s3Client = new S3Client({
   region: process.env.AWS_BUCKET_REGION,
   credentials: {
@@ -11,24 +12,32 @@ const s3Client = new S3Client({
 });
 
 /**
- * Uploads a file buffer to AWS S3.
- * @param {Buffer} fileBuffer - The file data as a buffer.
- * @param {string} mimeType - The MIME type of the file (e.g. "image/png").
+ * Uploads a file to AWS S3 with robust extension handling.
+ * @param {object} file - The file object from multer (req.file).
  * @returns {Promise<string>} - The public URL of the uploaded file.
  */
-export const uploadFileToS3 = async (fileBuffer, mimeType) => {
-  // Generate unique filename
+export const uploadFileToS3 = async (file) => {
   const randomHex = crypto.randomBytes(16).toString("hex");
 
-  // Extract extension from MIME type
-  const extension = mimeType.split("/")[1]; // e.g. "png"
-  const uniqueFileName = `${randomHex}.${extension}`;
+  // --- START: ROBUST EXTENSION LOGIC ---
+
+  // 1. Try to get the extension from the original filename.
+  let extension = path.extname(file.originalname);
+
+  // 2. If the filename has no extension, fall back to the mimetype.
+  if (!extension) {
+    extension = `.${file.mimetype.split("/")[1]}`;
+  }
+
+  // --- END: ROBUST EXTENSION LOGIC ---
+  
+  const uniqueFileName = `${randomHex}${extension}`;
 
   const command = new PutObjectCommand({
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: uniqueFileName,
-    Body: fileBuffer,
-    ContentType: mimeType,
+    Body: file.buffer,
+    ContentType: file.mimetype,
   });
 
   await s3Client.send(command);
