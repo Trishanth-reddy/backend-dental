@@ -1,22 +1,28 @@
+// backend/middleware/auth.middleware.js (Corrected)
 import jwt from 'jsonwebtoken';
 
-const authMiddleware = (req, res, next) => {
+// Renamed from authMiddleware to protect and exported directly
+export const protect = (req, res, next) => {
   const authHeader = req.header('Authorization');
-  if (!authHeader) return res.status(401).json({ message: 'No token' });
-  const token = authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'Invalid token format' });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'No token, authorization denied' });
+  }
+
   try {
+    const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded.user;
     next();
   } catch (err) {
-    res.status(401).json({ message: 'Invalid token' });
+    res.status(401).json({ message: 'Token is not valid' });
   }
 };
 
-export const adminMiddleware = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') next();
-  else res.status(403).json({ message: 'Admin access required' });
+// Renamed from adminMiddleware to isAdmin
+export const isAdmin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Admin access required' });
+  }
 };
-
-export default authMiddleware;
