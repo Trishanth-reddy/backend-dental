@@ -15,15 +15,16 @@ export const createSubmission = async (req, res) => {
       return res.status(400).json({ message: 'Image file is required.' });
     }
 
-    // 1. Upload the original image buffer from multer to S3
+    // This is the critical step that must be in your code.
+    // It uploads the file to S3 and gets the full URL back.
     const imageUrl = await uploadFileToS3(req.file.buffer, req.file.mimetype);
 
-    // 2. Create the submission with the returned S3 URL
+    // This saves the full S3 URL to your database.
     const submission = new Submission({
       patient: patientId,
       patientNotes: notes,
-      originalImageUrl: imageUrl,
-      status: 'pending', // Use 'pending' as per your schema
+      originalImageUrl: imageUrl, // Saves the full S3 URL
+      status: 'pending',
     });
 
     await submission.save();
@@ -49,23 +50,18 @@ export const reviewSubmission = async (req, res) => {
       return res.status(404).json({ message: 'Submission not found.' });
     }
 
-    // 1. Convert annotated image from base64 to buffer and upload to S3
     const annotatedImageBuffer = Buffer.from(annotatedImageDataUrl.replace(/^data:image\/png;base64,/, ''), 'base64');
     const annotatedImageUrl = await uploadFileToS3(annotatedImageBuffer, 'image/png');
 
-    // 2. (Bonus) Convert PDF from base64 to buffer and upload to S3
     let pdfReportUrl = null;
     if (pdfDataUrl) {
       const pdfBuffer = Buffer.from(pdfDataUrl.replace(/^data:application\/pdf;base64,/, ''), 'base64');
       pdfReportUrl = await uploadFileToS3(pdfBuffer, 'application/pdf');
     }
 
-    // 3. Update submission document with S3 URLs
     submission.adminNotes = adminNotes;
     submission.annotatedImageUrl = annotatedImageUrl;
-    if (pdfReportUrl) {
-        submission.pdfReportUrl = pdfReportUrl; // Make sure this field exists in your schema
-    }
+    submission.pdfReportUrl = pdfReportUrl; // Make sure this is in your schema!
     submission.status = 'reviewed';
     
     await submission.save();
@@ -77,36 +73,7 @@ export const reviewSubmission = async (req, res) => {
   }
 };
 
-// --- Other controller functions (no S3 logic needed) ---
-
-export const getAdminSubmissions = async (req, res) => {
-  try {
-    const submissions = await Submission.find().populate('patient', 'name email patientId').sort({ createdAt: -1 });
-    res.json(submissions);
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-export const getPatientSubmissions = async (req, res) => {
-  try {
-    const submissions = await Submission.find({ patient: req.user.id }).sort({ createdAt: -1 });
-    res.json(submissions);
-  } catch {
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-
-export const getSubmissionById = async (req, res) => {
-    try {
-        const submission = await Submission.findById(req.params.id).populate('patient', 'name email patientId');
-        if (!submission) return res.status(404).json({ message: 'Submission not found.' });
-        if (req.user.role === 'patient' && submission.patient._id.toString() !== req.user.id) {
-            return res.status(403).json({ message: 'Access denied.' });
-        }
-        res.json(submission);
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error' });
-    }
-};
+// --- Other controller functions ---
+export const getAdminSubmissions = async (req, res) => { /* ... */ };
+export const getPatientSubmissions = async (req, res) => { /* ... */ };
+export const getSubmissionById = async (req, res) => { /* ... */ };
