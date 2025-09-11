@@ -39,7 +39,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Handle preflight OPTIONS requests explicitly
-app.options('*', cors(corsOptions));
+app.options('/*', cors(corsOptions));
 
 // Body parsing middleware (after CORS)
 app.use(express.json({ limit: '10mb' }));
