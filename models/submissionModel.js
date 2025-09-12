@@ -8,6 +8,7 @@ const SubmissionSchema = new mongoose.Schema({
   annotatedImageUrl: { type: String },
   pdfReportUrl: { type: String },
   status: { type: String, enum: ['pending', 'reviewed'], default: 'pending' },
+
 }, { timestamps: true });
 
 const Submission = mongoose.model('Submission', SubmissionSchema);
