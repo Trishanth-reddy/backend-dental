@@ -1,8 +1,7 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import crypto from "crypto";
-import path from "path";
 
-// S3 Client Setup remains the same
+// S3 Client Setup
 const s3Client = new S3Client({
   region: process.env.AWS_BUCKET_REGION,
   credentials: {
@@ -12,32 +11,36 @@ const s3Client = new S3Client({
 });
 
 /**
- * Uploads a file to AWS S3 with robust extension handling.
- * @param {object} file - The file object from multer (req.file).
+ * Uploads a file buffer to AWS S3.
+ * @param {Buffer} buffer - The file buffer.
+ * @param {string} mimetype - The MIME type of the file (e.g., 'image/png').
  * @returns {Promise<string>} - The public URL of the uploaded file.
  */
-export const uploadFileToS3 = async (file) => {
+export const uploadFileToS3 = async (buffer, mimetype) => {
   const randomHex = crypto.randomBytes(16).toString("hex");
 
-  // --- START: ROBUST EXTENSION LOGIC ---
+  // FIX: Reliably determine the extension from the MIME type
+  // This avoids the error when originalname is not passed.
+  const mimeToExt = {
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/gif': '.gif',
+    'application/pdf': '.pdf',
+  };
 
-  // 1. Try to get the extension from the original filename.
-  let extension = path.extname(file.originalname);
-
-  // 2. If the filename has no extension, fall back to the mimetype.
+  const extension = mimeToExt[mimetype] || `.${mimetype.split('/')[1]}`;
+  
   if (!extension) {
-    extension = `.${file.mimetype.split("/")[1]}`;
+    throw new Error(`Could not determine file extension for MIME type: ${mimetype}`);
   }
 
-  // --- END: ROBUST EXTENSION LOGIC ---
-  
   const uniqueFileName = `${randomHex}${extension}`;
 
   const command = new PutObjectCommand({
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: uniqueFileName,
-    Body: file.buffer,
-    ContentType: file.mimetype,
+    Body: buffer,
+    ContentType: mimetype,
   });
 
   await s3Client.send(command);
