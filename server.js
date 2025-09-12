@@ -46,6 +46,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/submissions', submissionRoutes);
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
