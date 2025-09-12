@@ -18,6 +18,7 @@ const corsOptions = {
   origin: [
     'http://localhost:8080', // Your local dev server
     'http://localhost:5173', // Default Vite port
+    'https://dental-scribe-app.vercel.app/',
     // Add your deployed frontend URL here when you have it
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
