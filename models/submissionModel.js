@@ -6,7 +6,6 @@ const SubmissionSchema = new mongoose.Schema({
   adminNotes: { type: String },
   originalImageUrl: { type: String, required: true },
   annotatedImageUrl: { type: String },
-  // ✅ FIX: Added the missing pdfReportUrl field
   pdfReportUrl: { type: String },
   status: { type: String, enum: ['pending', 'reviewed'], default: 'pending' },
 }, { timestamps: true });

@@ -1,13 +1,7 @@
-// backend/controllers/submission.controller.js
-
 import Submission from '../models/submissionModel.js';
 import { uploadFileToS3 } from '../services/s3.service.js';
 
-/**
- * @desc    Patient creates a new submission by uploading an image
- * @route   POST /api/submissions
- * @access  Private (Patient)
- */
+// Patient creates a new submission
 export const createSubmission = async (req, res) => {
   try {
     const { notes } = req.body;
@@ -34,11 +28,7 @@ export const createSubmission = async (req, res) => {
   }
 };
 
-/**
- * @desc    Admin reviews a submission, uploading annotated image and report
- * @route   PUT /api/submissions/:id/review
- * @access  Private (Admin)
- */
+// Admin reviews a submission
 export const reviewSubmission = async (req, res) => {
   try {
     const { id } = req.params;
@@ -52,11 +42,8 @@ export const reviewSubmission = async (req, res) => {
     const annotatedImageBuffer = Buffer.from(annotatedImageDataUrl.replace(/^data:image\/png;base64,/, ''), 'base64');
     const annotatedImageUrl = await uploadFileToS3(annotatedImageBuffer, 'image/png');
 
-    let pdfReportUrl = null;
-    if (pdfDataUrl) {
-      const pdfBuffer = Buffer.from(pdfDataUrl.replace(/^data:application\/pdf;base64,/, ''), 'base64');
-      pdfReportUrl = await uploadFileToS3(pdfBuffer, 'application/pdf');
-    }
+    const pdfBuffer = Buffer.from(pdfDataUrl.replace(/^data:application\/pdf;base64,/, ''), 'base64');
+    const pdfReportUrl = await uploadFileToS3(pdfBuffer, 'application/pdf');
 
     submission.adminNotes = adminNotes;
     submission.annotatedImageUrl = annotatedImageUrl;
@@ -65,25 +52,16 @@ export const reviewSubmission = async (req, res) => {
 
     await submission.save();
     res.json(submission);
-
   } catch (error) {
     console.error('Error reviewing submission:', error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
 
-// --- ✅ FIX: Implement the getPatientSubmissions function ---
-/**
- * @desc    Get all submissions for the logged-in patient
- * @route   GET /api/submissions/patient
- * @access  Private (Patient)
- */
+// Get all submissions for the logged-in patient
 export const getPatientSubmissions = async (req, res) => {
   try {
-    // The 'protect' middleware gives us req.user
-    const submissions = await Submission.find({ patient: req.user.id })
-      .sort({ createdAt: -1 }); // Sort by newest first
-
+    const submissions = await Submission.find({ patient: req.user.id }).sort({ createdAt: -1 });
     res.status(200).json(submissions);
   } catch (error) {
     console.error('Error fetching patient submissions:', error);
@@ -91,24 +69,20 @@ export const getPatientSubmissions = async (req, res) => {
   }
 };
 
-
-// --- Other controller functions (ensure they are implemented as needed) ---
-
+// Get all submissions for the admin dashboard
 export const getAdminSubmissions = async (req, res) => {
   try {
-    const submissions = await Submission.find({})
-      .populate('patient', 'name email patientId')
-      .sort({ createdAt: -1 });
+    const submissions = await Submission.find({}).populate('patient', 'name email patientId').sort({ createdAt: -1 });
     res.json(submissions);
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
   }
 };
 
+// Get a single submission by its ID
 export const getSubmissionById = async (req, res) => {
   try {
-    const submission = await Submission.findById(req.params.id)
-      .populate('patient', 'name email patientId');
+    const submission = await Submission.findById(req.params.id).populate('patient', 'name email patientId phone');
     if (!submission) {
       return res.status(404).json({ message: 'Submission not found' });
     }
